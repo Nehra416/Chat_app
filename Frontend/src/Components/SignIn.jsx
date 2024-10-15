@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom';
 import { RiLoader2Line } from "react-icons/ri";
+import axios from 'axios'
 
 const SignIn = () => {
     const [input, setInput] = useState({
-        email: "",
+        userName: "",
         password: ""
     })
 
@@ -17,7 +18,27 @@ const SignIn = () => {
     }
 
     // function to handle the sign in process
-    const handleSignIn = async (e) => {};
+    const handleSignIn = async (e) => {
+        e.preventDefault();
+
+        try {
+            setLoading(true);
+
+            const res = await axios.post('http://localhost:8000/user/signin', input, { withCredentials: true })
+            // console.log("response :", res);
+
+            if (res.data.success) {
+                alert(res.data.message);
+                navigate('/')
+            }
+
+        } catch (error) {
+            console.log("Error in handleSignIn :", error);
+            alert(error.response.data.message)
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className='flex justify-center items-center w-screen h-screen px-3'>
@@ -30,10 +51,10 @@ const SignIn = () => {
 
                 {/* takes the user's data from the client for signin */}
                 <div>
-                    <h1 className='font-semibold'>Email</h1>
-                    <input type="email"
+                    <h1 className='font-semibold'>Username</h1>
+                    <input type="text"
                         className='border-2 w-full rounded-md h-8 pl-2 font-medium my-2'
-                        onChange={handleInput} value={input.email} name='email' required />
+                        onChange={handleInput} value={input.userName} name='userName' required />
                 </div>
                 <div>
                     <h1 className='font-semibold'>Password</h1>

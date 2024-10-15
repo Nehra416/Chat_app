@@ -16,15 +16,17 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(cors(
     {
-        origin: '*',
-        credentials: true,
+        origin: 'http://localhost:5173',
+        credentials: true, // Allow cookies to be sent 
     }
 ));
 
 // Routes...
 const UserRoutes = require('./routes/UserRoutes');
+const ChatRoutes = require('./routes/ChatRoutes');
 
 app.use('/user', UserRoutes);
+app.use('/chat', ChatRoutes);
 
 
 // Start the server

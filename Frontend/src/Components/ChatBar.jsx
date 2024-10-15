@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { MdOpenInNew } from "react-icons/md";
 import { IoSearch } from "react-icons/io5";
 import me from "../Img/me.jpg";
@@ -102,8 +102,20 @@ const ChatBar = () => {
             img: me,
             read: true,
         },
-        
+
     ]
+
+    useEffect(() => {
+        const getUsers = async () => {
+            try {
+                const res = await axios.get('http://localhost:8000/user/get-users', { withCredentials: true });
+                console.log('Users :', res.data);
+            } catch (err) {
+                console.error('Error in getting users :', err);
+            }
+        }
+    }, []);
+
     return (
         <div className='h-[96vh] w-[35vw] rounded-xl bg-white my-[2vh] overflow-hidden'>
             <div className='sticky top-0 right-0 left-0 bg-white'>

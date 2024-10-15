@@ -24,8 +24,8 @@ const sendOTP = (clientId) => {
     }
 
     transporter.sendMail(mailOptions, (err, info) => {
-        if (info) console.log("Email Sent : ", info)
-        else console.log("Email not Sent : ", err);
+        if (err) console.log("Email not Sent : ", err)
+        // else console.log("Email Sent : ", info)
     })
 
     return otp;

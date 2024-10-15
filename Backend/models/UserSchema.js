@@ -18,6 +18,6 @@ const UserSchema = mongoose.Schema({
         type: String,
         default: 'default.jpg'
     },
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model('User', UserSchema);
