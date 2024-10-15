@@ -29,7 +29,7 @@ const SignIn = () => {
 
             if (res.data.success) {
                 alert(res.data.message);
-                navigate('/')
+                navigate('/logo/chat')
             }
 
         } catch (error) {

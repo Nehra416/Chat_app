@@ -301,6 +301,41 @@ const logout = async (req, res) => {
     }
 }
 
+const getAllUsers = async (req, res) => {
+    try {
+        // get all users from db (without password)
+        const users = await User.find({}).select('-password');
+
+        // return the users
+        return res.status(200).json({
+            users,
+            message: 'All Users',
+            success: true
+        })
+    } catch (error) {
+        console.log("Error in getAllUsers :", error);
+    }
+}
+
+const userChat = async (req, res) => {
+    try {
+        const userId = req.user;
+
+        // find all users except the current user
+        const users = await User.findById(userId).select('chatWith').populate('chatWith.userId', 'userName email profilePic');
+        // console.log("userChat :", users);
+
+        // return the users
+        return res.status(200).json({
+            users,
+            message: 'Chat Users',
+            success: true
+        })
+    } catch (error) {
+        console.log("Error in userChat :", error);
+    }
+}
+
 module.exports = {
-    signup, signin, otpVerifyForSignup, updateUser, sendOtpForForgetPwd, otpVerifyForForget, updateForgetPwd, logout
+    signup, signin, otpVerifyForSignup, updateUser, sendOtpForForgetPwd, otpVerifyForForget, updateForgetPwd, logout, getAllUsers, userChat
 }

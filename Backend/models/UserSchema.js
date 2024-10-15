@@ -16,8 +16,22 @@ const UserSchema = mongoose.Schema({
     },
     profilePic: {
         type: String,
-        default: 'default.jpg'
+        default: ''
     },
+    chatWith: [
+        {
+            userId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'User'
+            },
+            lastMessage: {
+                type: String
+            },
+            lastMessageTime: {
+                type: Date
+            }
+        }
+    ]
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', UserSchema);

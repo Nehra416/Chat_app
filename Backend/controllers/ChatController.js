@@ -38,6 +38,25 @@ const sendMessage = async (req, res) => {
             userId
         })
 
+        // Update the last message and time && also add userId who messages
+        // await User.findByIdAndUpdate(userId, { chatWith: { userId: senderId, lastMessage: content, lastMessageTime: Date.now() } })
+
+        const user = await User.findById(userId)
+        const isPresent = user.chatWith.filter(item => item.userId.toString() === senderId.toString())
+        console.log("value of isPresent", isPresent);
+
+        if (isPresent.length === 0) {
+            user.chatWith.push({ userId: senderId, lastMessage: content, lastMessageTime: Date.now() })
+            console.log("hi")
+            await user.save();
+        } else {
+            isPresent[0].lastMessage = content;
+            isPresent[0].lastMessageTime = Date.now();
+            await user.save();
+            console.log("value of isPresent", isPresent);
+            console.log("byy")
+        }
+
         return res.status(201).json({
             message: 'Message sent successfully',
             success: true

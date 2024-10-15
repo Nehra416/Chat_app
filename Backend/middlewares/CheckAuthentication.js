@@ -20,7 +20,7 @@ const checkAuthentication = (req, res, next) => {
                 success: false
             })
         }
-        console.log("jwt data is:", tokenData)
+        // console.log("jwt data is:", tokenData)
 
         // send tokenData with req
         req.user = tokenData._id;
