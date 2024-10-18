@@ -32,7 +32,7 @@ const MenuBar = () => {
                     {read && <GoDotFill className='absolute -top-3 -right-2 text-blue-400' />}
                 </span>
             </div>
-            <div>
+            <div onClick={() => navigate('/logo/profile')}>
                 <img src={me} alt="Dp" title='Profile' className='rounded-full w-8 h-8' />
             </div>
         </div>

@@ -22,3 +22,9 @@ body {
 .chat-scrollbar::-webkit-scrollbar-thumb:hover {
     background: gray;
 }
+
+@layer base {
+  :root {
+        --radius: 0.5rem;
+    }
+}

@@ -47,6 +47,7 @@ const sendMessage = async (req, res) => {
 
         if (isPresent.length === 0) {
             user.chatWith.push({ userId: senderId, lastMessage: content, lastMessageTime: Date.now() })
+            sender.chatWith.push({ userId: userId, lastMessage: content, lastMessageTime: Date.now() })
             console.log("hi")
             await user.save();
         } else {
@@ -71,7 +72,7 @@ const getAllMessages = async (req, res) => {
     try {
         const { senderId } = req.body;
         const userId = req.user;
-
+        console.log(userId, senderId)
         // Check senderId and userId are is present or not
         if (!senderId || !userId) {
             return res.status(400).json({
@@ -81,11 +82,20 @@ const getAllMessages = async (req, res) => {
         }
 
         // Get all messages between senderId and userId
-        const messages = await Chat.find({ senderId, userId }).select('content')
+        const messages = await Chat.find({
+            $or: [
+                { senderId: userId, userId: senderId },
+                { senderId, userId },
+            ]
+        }).select('content senderId')
+        // console.log("messages:", messages)
+
+        const senderDetails = await User.findById(senderId).select('-password')
 
         // send the result
         return res.status(200).json({
             messages: messages,
+            user: senderDetails,
             success: true
         })
     } catch (error) {

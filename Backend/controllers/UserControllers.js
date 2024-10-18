@@ -198,7 +198,7 @@ const updateUser = async (req, res) => {
         const profile = req.file;
 
         // Atleast one thing is required for further process
-        if (!profile && !userName && !newPassword) {
+        if (!profile && !newUserName && !newPassword) {
             return res.status(404).json({
                 message: 'Atleast one update parameter is required',
                 success: false
