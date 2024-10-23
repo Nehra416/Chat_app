@@ -1,4 +1,5 @@
 const Chat = require('../models/ChatSchema');
+const Conversation = require('../models/ConversationSchema');
 const User = require('../models/UserSchema');
 
 const sendMessage = async (req, res) => {
@@ -32,30 +33,48 @@ const sendMessage = async (req, res) => {
         }
 
         // Create new message
-        await Chat.create({
+        const msj = await Chat.create({
             content,
             senderId,
-            userId
+            receiverId: userId
         })
 
         // Update the last message and time && also add userId who messages
         // await User.findByIdAndUpdate(userId, { chatWith: { userId: senderId, lastMessage: content, lastMessageTime: Date.now() } })
 
         const user = await User.findById(userId)
-        const isPresent = user.chatWith.filter(item => item.userId.toString() === senderId.toString())
-        console.log("value of isPresent", isPresent);
+        const isPresent = user.friends.filter(item => item.senderId.toString() === senderId.toString())
+        // console.log("value of isPresent", isPresent);
 
+        // if the senderId user is not friend with us before, then add its id in our friends array
         if (isPresent.length === 0) {
             user.chatWith.push({ userId: senderId, lastMessage: content, lastMessageTime: Date.now() })
             sender.chatWith.push({ userId: userId, lastMessage: content, lastMessageTime: Date.now() })
-            console.log("hi")
             await user.save();
         } else {
             isPresent[0].lastMessage = content;
             isPresent[0].lastMessageTime = Date.now();
             await user.save();
-            console.log("value of isPresent", isPresent);
-            console.log("byy")
+            // console.log("value of isPresent after update", isPresent);
+        }
+
+
+        // check that conversation is created or not before between both users
+        const conversation = await Conversation.findOne({
+            participants: { $all: [userId, senderId] }
+        });
+
+        // if not, then create a new conversation and add message id
+        if (!conversation) {
+            await Conversation.create({
+                participants: [userId, senderId],
+                message: msj._id
+            })
+
+        } else {
+            // conversation.message = msj._id;
+            conversation.message.push(msj._id);
+            await conversation.save();
         }
 
         return res.status(201).json({
@@ -73,6 +92,7 @@ const getAllMessages = async (req, res) => {
         const { senderId } = req.body;
         const userId = req.user;
         console.log(userId, senderId)
+
         // Check senderId and userId are is present or not
         if (!senderId || !userId) {
             return res.status(400).json({
@@ -81,16 +101,15 @@ const getAllMessages = async (req, res) => {
             })
         }
 
-        // Get all messages between senderId and userId
-        const messages = await Chat.find({
-            $or: [
-                { senderId: userId, userId: senderId },
-                { senderId, userId },
-            ]
-        }).select('content senderId')
-        // console.log("messages:", messages)
+        // Get all messages between senderId and userId in conversation participants by populate message
+        const messages = await Conversation.findOne({
+            participants: { $all: [userId, senderId] }
+        }).populate('message');
 
-        const senderDetails = await User.findById(senderId).select('-password')
+        console.log("messages:", messages)
+
+        const senderDetails = await User.findById(senderId).select('userName profilePic')
+        console.log("senderDetails:", senderDetails)
 
         // send the result
         return res.status(200).json({
@@ -104,6 +123,44 @@ const getAllMessages = async (req, res) => {
 }
 
 
+// list of all the users
+const getAllUsers = async (req, res) => {
+    try {
+        // get all users from db (without password)
+        const users = await User.find({}).select('-password');
+
+        // return the users
+        return res.status(200).json({
+            users,
+            message: 'All Users',
+            success: true
+        })
+    } catch (error) {
+        console.log("Error in getAllUsers :", error);
+    }
+}
+
+// list of chats with the friends
+const userChat = async (req, res) => {
+    try {
+        const userId = req.user;
+
+        // find all users except the current user
+        const users = await User.findById(userId).select('friends').populate({path:'friends.senderId', select:'userName email profilePic'});
+        // console.log("userChat :", users);
+
+        // return the users
+        return res.status(200).json({
+            users,
+            message: 'Chat Users',
+            success: true
+        })
+    } catch (error) {
+        console.log("Error in userChat :", error);
+    }
+}
+
+
 module.exports = {
-    sendMessage, getAllMessages,
+    sendMessage, getAllMessages, userChat, getAllUsers
 };

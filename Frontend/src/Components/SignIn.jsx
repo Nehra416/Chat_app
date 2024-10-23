@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom';
 import { RiLoader2Line } from "react-icons/ri";
 import axios from 'axios'
+import { useDispatch } from 'react-redux';
+import { setUserData } from '@/Redux/UserSlice';
 
 const SignIn = () => {
     const [input, setInput] = useState({
@@ -11,6 +13,7 @@ const SignIn = () => {
 
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const dispatch = useDispatch();
 
     // function to handle input changes
     const handleInput = (e) => {
@@ -29,6 +32,7 @@ const SignIn = () => {
 
             if (res.data.success) {
                 alert(res.data.message);
+                dispatch(setUserData(res.data.user));
                 navigate('/logo/chat')
             }
 

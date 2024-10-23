@@ -8,7 +8,7 @@ const UserSchema = mongoose.Schema({
     },
     email: {
         type: String,
-        required: true,
+        // required: true,
         unique: true
     },
     password: {
@@ -19,9 +19,9 @@ const UserSchema = mongoose.Schema({
         type: String,
         default: ''
     },
-    chatWith: [
+    friends: [
         {
-            userId: {
+            senderId: {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'User'
             },

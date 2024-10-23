@@ -1,15 +1,22 @@
 import { createSlice } from '@reduxjs/toolkit'
 
 const chatslice = createSlice({
-    name: 'chats',
+    name: 'chat',
     initialState: {
-        chats: [],
+        friendList: [],
+        allUsers: [],
     },
     reducers: {
         // we add here
+        setFriendsList: (state, action) => {
+            state.friendList = action.payload;
+        },
+        setAllUsers: (state, action) => {
+            state.allUsers = action.payload;
+        },
     }
 })
 
-export const { } = chatslice.actions;
+export const { setFriendsList, setAllUsers } = chatslice.actions;
 
 export default chatslice.reducer;

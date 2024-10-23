@@ -28,7 +28,8 @@ const SignUp = () => {
 
             if (res.data.success) {
                 alert(res.data.message);
-                navigate(`/otp-verify/${userName}`);
+                localStorage.setItem('email', input.email);
+                navigate(`/otp-verify`);
             }
 
         } catch (error) {

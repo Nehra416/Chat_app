@@ -10,14 +10,15 @@ import AllUsers from './AllUsers';
 import RequestChats from './RequestChats';
 import ArchieveChats from './ArchieveChats';
 
-const ChatBar = () => {
-    const [MenuBarValue, setMenuBarValue] = useState();
-    const { id } = useParams();
-    useEffect(() => {
-        setMenuBarValue(id);
-    }, [MenuBarValue, id]);
+const ChatBar = ({ activePage }) => {
+    console.log("ChatBar:", activePage);
+    // const [MenuBarValue, setMenuBarValue] = useState();
+    // const { id } = useParams();
+    // useEffect(() => {
+    //     setMenuBarValue(id);
+    // }, [MenuBarValue, id]);
 
-    console.log("menubar value is ", MenuBarValue);
+    // console.log("menubar value is ", MenuBarValue);
 
     return (
         <div className='h-[96vh] w-[35vw] rounded-xl bg-white my-[2vh] overflow-hidden'>
@@ -39,10 +40,10 @@ const ChatBar = () => {
 
             <div className='h-[78vh] overflow-auto chat-scrollbar' >
                 {
-                    MenuBarValue === 'chat' ? <UserChats /> :
-                        MenuBarValue === 'all-users' ? <AllUsers /> :
-                            MenuBarValue === 'request' ? <RequestChats /> :
-                                MenuBarValue === 'archeives' ? <ArchieveChats /> : null
+                    activePage == 'chat' ? <UserChats activePage={activePage} /> :
+                        activePage == 'all-users' ? <AllUsers activePage={activePage} /> :
+                            activePage == 'request' ? <RequestChats activePage={activePage} /> :
+                                activePage == 'archeives' ? <ArchieveChats activePage={activePage} /> : null
                 }
             </div>
         </div>

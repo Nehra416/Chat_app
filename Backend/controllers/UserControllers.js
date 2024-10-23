@@ -3,66 +3,82 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt')
 const uploadToCloudinary = require('../config/Cloudinary');
 const sendOTP = require('../config/NodeMailer');
+const fs = require('fs');
 let data = {};
+let isOtpVerified = {};
 
 const signup = async (req, res) => {
+    const { userName, email, password, receivedOTP } = req.body;
+
     try {
-        const { userName, email, password } = req.body;
-        // console.log(req.body);
 
-        // Check that all fields are given
-        if (!userName || !email || !password) {
-            return res.status(400).json({ message: "All fields are required", success: false })
+        if (!receivedOTP) {
+
+            // Check that all fields are given
+            if (!userName || !email || !password) {
+                return res.status(400).json({ message: "All fields are required", success: false })
+            }
+
+            // Check userName already exists or not in the database
+            const user = await User.findOne({ userName })
+            if (user) {
+                return res.status(400).json({ message: "Username already exists", success: false })
+            }
+
+            // Hashing the Password
+            const hashedPassword = await bcrypt.hash(password, 10);
+
+            // OTP send to the email by the nodemailer
+            const otp = sendOTP(email);
+            console.log("OTP is :", otp);
+
+            // store data as a object
+            data[email] = { userName, email, password: hashedPassword, otp };
+
+            return res.status(201).json({
+                message: 'OTP Send to Your Email',
+                success: true
+            })
+        } else {
+            try {
+                console.log("data object:", data);
+                if (!email) {
+                    return res.status(400).json({ message: "Email is required", success: false })
+                }
+
+                if (!data[email]) {
+                    return res.status(400).json({ message: "Data object not found on this email", success: false });
+                }
+
+                // we need only to send otp & email from frontend at otp verify time
+                const { userName, password, otp } = data[email];
+
+                if (otp == receivedOTP) {
+                    // Now create a new user
+                    await User.create({ userName, email, password })
+
+                    // delete the email object of the user
+                    delete data[email];
+
+                    return res.status(201).json({
+                        message: "New Account created successfully", success: true
+                    })
+                } else {
+                    return res.status(400).json({
+                        message: "OTP is Wrong", success: false
+                    })
+                }
+
+            } catch (error) {
+                console.log("Error in the otpVerifyForSignup :", error)
+            }
         }
-
-        // Check userName already exists or not in the database
-        const user = await User.findOne({ userName })
-        if (user) {
-            return res.status(400).json({ message: "Username already exists", success: false })
-        }
-
-        // Hashing the Password
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        // OTP send to the email by the nodemailer
-        const otp = sendOTP(email);
-        console.log("ji", otp);
-
-        // store data as a object
-        data = { userName, email, password: hashedPassword, otp };
-
-        return res.status(201).json({
-            message: 'OTP Send to Your Email',
-            success: true
-        })
 
     } catch (error) {
         console.log("Error in signup ", error)
     }
 }
 
-const otpVerifyForSignup = async (req, res) => {
-    try {
-        const { OTP } = req.body;
-        const { userName, email, password, otp } = data;
-
-        if (otp == OTP) {
-            // Now create a new user
-            await User.create({ userName, email, password })
-
-            return res.status(201).json({
-                message: "New Account created successfully", success: true
-            })
-        } else {
-            return res.status(400).json({
-                message: "OTP is Wrong", success: false
-            })
-        }
-
-    } catch (error) {
-        console.log("Error in the otpVerifyForSignup :", error)
-    }
-}
 
 const signin = async (req, res) => {
     try {
@@ -93,7 +109,9 @@ const signin = async (req, res) => {
         // return the response with the token
         return res.cookie('token', token).status(201)
             .json({
-                message: `Welcome ${user.userName}`, success: true
+                message: `Welcome ${user.userName}`,
+                success: true,
+                user: user
             });
 
     } catch (error) {
@@ -101,69 +119,75 @@ const signin = async (req, res) => {
     }
 }
 
-const sendOtpForForgetPwd = async (req, res) => {
+const verifyOtpForForgetPassword = async (req, res) => {
     try {
-        const { userName } = req.body;
+        const { userName, receivedOTP } = req.body;
 
-        // userName is required for further process
-        if (!userName) {
-            return res.status(404).json({
-                message: 'UserName is Required',
+        if (!receivedOTP) {
+
+            // userName is required for further process
+            if (!userName) {
+                return res.status(404).json({
+                    message: 'UserName is Required',
+                    success: false
+                })
+            }
+
+            // check the user exist or not
+            const user = await User.findOne({ userName })
+            if (!user) {
+                return res.status(404).json({
+                    message: "Can't found Account",
+                    success: false
+                })
+            }
+
+            // send otp to the email of client and save the otp in data object for comparision
+            const otp = sendOTP(user.email);
+            data[userName] = otp;
+
+            // return with a success message
+            return res.status(201).json({
+                message: 'OTP Send to you Email',
                 success: false
             })
+        } else {
+            try {
+                // for otp verification user needs to send userName and otp only
+                const otp = data[userName];
+
+                // if receivedOTP is wrong then return back
+                if (otp != receivedOTP) {
+                    return res.status(400).json({
+                        message: 'OTP Wrong',
+                        success: false
+                    })
+                }
+
+                // delete the otp object for this username
+                delete data[userName];
+
+                // set true for otp verification user
+                isOtpVerified[userName] = true;
+
+                // return with success message
+                return res.status(201).json({
+                    message: 'Verification Successfully',
+                    success: true
+                })
+
+            } catch (error) {
+                console.log("Error in verifyOtp :", error)
+            }
         }
-
-        // check the user exist or not
-        const user = await User.findOne({ userName })
-        if (!user) {
-            return res.status(404).json({
-                message: "Can't found Account",
-                success: false
-            })
-        }
-
-        // send otp to the email of client and save the otp in data object for comparision
-        const otp = sendOTP(user.email);
-        data[userName] = otp;
-
-        // return with a success message
-        return res.status(201).json({
-            message: 'OTP Send to you Email',
-            success: false
-        })
 
     } catch (error) {
         console.log("Error in sendOtpForForgetPwd :", error)
     }
 }
 
-const otpVerifyForForget = async (req, res) => {
-    try {
-        const { userName, receivedOTP } = req.body;
 
-        // if receivedOTP is wrong then return back
-        if (data[userName] != receivedOTP) {
-            return res.status(400).json({
-                message: 'OTP Wrong',
-                success: false
-            })
-        }
-
-        // delete the otp object for this username
-        delete data[userName];
-
-        // return with success message
-        return res.status(201).json({
-            message: 'Verification Successfully',
-            success: true
-        })
-
-    } catch (error) {
-        console.log("Error in verifyOtp :", error)
-    }
-}
-
-const updateForgetPwd = async (req, res) => {
+const updateForgetPassword = async (req, res) => {
     try {
         const { userName, newPassword } = req.body;
 
@@ -175,6 +199,17 @@ const updateForgetPwd = async (req, res) => {
                 success: false
             })
         }
+
+        // check that is that user verified the otp in last step or not
+        if (!isOtpVerified[userName]) {
+            return res.status(400).json({
+                message: "Verified the Email otp first",
+                success: false,
+            })
+        }
+
+        // delete the isOtpVerified object 
+        delete isOtpVerified[userName];
 
         // Hashing the password then update the pwd in db
         const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -194,7 +229,7 @@ const updateForgetPwd = async (req, res) => {
 const updateUser = async (req, res) => {
     try {
         const { newUserName, password, newPassword } = req.body;
-        const { userName: user } = req.cookies.token;
+        const { userName } = req.cookies.token;
         const profile = req.file;
 
         // Atleast one thing is required for further process
@@ -206,7 +241,7 @@ const updateUser = async (req, res) => {
         }
 
         // check the user exist or not
-        const userData = await User.findOne({ user })
+        const userData = await User.findOne({ userName })
         if (!userData) {
             return res.status(400).json({
                 message: "User can't found",
@@ -260,10 +295,10 @@ const updateUser = async (req, res) => {
             })
         }
 
-        // if user can send profile string
+        // if user can send profile 
         if (profile) {
-            // send the profile to the cloudinary
-            const ImgUrl = uploadToCloudinary(profile.path);
+            // send the profile image to the cloudinary
+            const ImgUrl = await uploadToCloudinary(profile.path);
             if (!ImgUrl) {
                 return res.status(400).json({
                     message: 'Error in Uploading',
@@ -274,6 +309,9 @@ const updateUser = async (req, res) => {
             // update the profile string in the dataBase
             userData.profile = ImgUrl;
             await userData.save();
+
+            // unlink the profile image from the local storage
+            fs.unlink(profile.path);
 
             // return the suucess message
             return res.status(201).json({
@@ -301,41 +339,6 @@ const logout = async (req, res) => {
     }
 }
 
-const getAllUsers = async (req, res) => {
-    try {
-        // get all users from db (without password)
-        const users = await User.find({}).select('-password');
-
-        // return the users
-        return res.status(200).json({
-            users,
-            message: 'All Users',
-            success: true
-        })
-    } catch (error) {
-        console.log("Error in getAllUsers :", error);
-    }
-}
-
-const userChat = async (req, res) => {
-    try {
-        const userId = req.user;
-
-        // find all users except the current user
-        const users = await User.findById(userId).select('chatWith').populate('chatWith.userId', 'userName email profilePic');
-        // console.log("userChat :", users);
-
-        // return the users
-        return res.status(200).json({
-            users,
-            message: 'Chat Users',
-            success: true
-        })
-    } catch (error) {
-        console.log("Error in userChat :", error);
-    }
-}
-
 module.exports = {
-    signup, signin, otpVerifyForSignup, updateUser, sendOtpForForgetPwd, otpVerifyForForget, updateForgetPwd, logout, getAllUsers, userChat
+    signup, signin, updateUser, verifyOtpForForgetPassword, updateForgetPassword, logout
 }

@@ -7,23 +7,29 @@ import { MdMoreHoriz } from "react-icons/md";
 import { useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { FaUser } from "react-icons/fa";
+import { Loader2 } from 'lucide-react';
 
 const Chating = () => {
     const { search } = useLocation();
     const [chatData, setChatData] = useState([]);
     const [userData, setUserData] = useState();
     const [inputText, setInputText] = useState('')
+    const [loading, setLoading] = useState(false);
     const senderId = search.replace('?', '');
 
     useEffect(() => {
         const getChat = async () => {
-            const senderId = search.replace('?', '');
+
             try {
-                const res = await axios.post(`http://localhost:8000/chat/all`, { senderId }, { withCredentials: true })
-                console.log("res is :", res);
-                setChatData(res.data.messages);
-                setUserData(res.data.user);
-                console.log("user is :", res.data.user);
+                const res = await axios.post(`http://localhost:8000/message/all`, { senderId }, { withCredentials: true })
+                console.log("res is :", res.data.messages.message);
+                setChatData([])
+                if (res.data.success) {
+                    setChatData(res.data.messages?.message);
+                    console.log("chat data is :",chatData);
+                    setUserData(res.data.user);
+                    console.log("user is :", res.data.user);
+                }
             } catch (error) {
                 console.log(error);
             }
@@ -32,15 +38,22 @@ const Chating = () => {
     }, [search]);
 
     const sendMessage = async () => {
+        // stop the sending request if input field is empty
+        let text = inputText.trim();
+        if (text === '') return;
+
         try {
-            const senderId = search.replace('?', '');
-            const res = await axios.post('http://localhost:8000/chat/send', { senderId, content: inputText }, { withCredentials: true })
+            setLoading(true);
+
+            const res = await axios.post('http://localhost:8000/message/send', { senderId, content: inputText }, { withCredentials: true })
             console.log("res is :", res);
             if (res.data.success) {
                 setInputText('');
             }
         } catch (error) {
             console.log(error);
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -92,7 +105,12 @@ const Chating = () => {
             {/* Send Message div */}
             <div div className='flex gap-2 absolute bottom-0 left-0 right-0 mx-2 bg-white py-2' >
                 <input value={inputText} onChange={(e) => setInputText(e.target.value)} type="text" className='pl-2 py-1 border rounded outline-none flex-grow' placeholder='Text . . .' />
-                <button onClick={sendMessage} className='bg-gray-600 hover:bg-gray-800 text-white px-4 py-2 rounded'>Send</button>
+                {
+                    loading ?
+                        <button className='bg-gray-600 hover:bg-gray-800 text-white px-4 py-2 rounded text-center'><Loader2 /></button>
+                        :
+                        <button onClick={sendMessage} className='bg-gray-600 hover:bg-gray-800 text-white px-4 py-2 rounded'>Send</button>
+                }
             </div >
         </div >
     )

@@ -5,11 +5,11 @@ import axios from 'axios'
 
 const OtpVerify = () => {
     const [OTP, setOTP] = useState();
-
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
-    const params = useParams();
-    const userName = params.id;
+    // const params = useParams();
+    // const userName = params.id;
+
 
     // function to handle the sign in process
     const handleOtpVerify = async (e) => {
@@ -17,7 +17,9 @@ const OtpVerify = () => {
         try {
             setLoading(true);
 
-            const res = await axios.post('http://localhost:8000/user/signup-verify', { userName, OTP }, { withCredentials: true })
+            // getting the email from local storage before sending the OTP
+            const email = localStorage.getItem('email');
+            const res = await axios.post('http://localhost:8000/user/signup', { email, receivedOTP: OTP }, { withCredentials: true })
             console.log("res is:", res);
 
             if (res.data.success) {
